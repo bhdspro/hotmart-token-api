@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: hotmart-token-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: CLIENT_ID
+        fromDotEnv: true
+      - key: CLIENT_SECRET
+        fromDotEnv: true
