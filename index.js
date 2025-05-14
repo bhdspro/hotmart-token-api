@@ -1,77 +1,36 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const fetch = require('node-fetch');
+const axios = require('axios');
+const qs = require('qs');
+require('dotenv').config();  // Carrega as variáveis de ambiente
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+async function obterToken() {
+  const url = 'https://api-sec-vlc.hotmart.com/security/oauth/token';  // URL da Hotmart
+  const client_id = process.env.CLIENT_ID;  // Obtém do .env
+  const client_secret = process.env.CLIENT_SECRET;  // Obtém do .env
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+  // Codifica client_id:client_secret em Base64
+  const auth = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
 
-// ROTA 1: gerar token de acesso via client credentials
-app.post('/gerar-token', async (req, res) => {
-  const url = 'https://api-sec-vlc.hotmart.com/security/oauth/token';
-
-  const params = new URLSearchParams();
-  params.append('client_id', process.env.CLIENT_ID);
-  params.append('client_secret', process.env.CLIENT_SECRET);
-  params.append('grant_type', 'client_credentials');
+  // Codifica os parâmetros do corpo da requisição
+  const params = qs.stringify({
+    grant_type: 'client_credentials',
+  });
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      res.json({ token: data.access_token });
-    } else {
-      res.status(400).json({ erro: data.error_description || 'Erro desconhecido' });
-    }
-  } catch (error) {
-    res.status(500).json({ erro: 'Erro no servidor', detalhe: error.message });
-  }
-});
-
-// ROTA 2: listar produtos usando o token
-app.get('/produtos', async (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ erro: 'Token não fornecido' });
-  }
-
-  try {
-    const response = await fetch('https://api.hotmart.com/payments/api/v1/products', {
+    // Envia a requisição
+    const response = await axios.post(url, params, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        'Authorization': `Basic ${auth}`,  // Cabeçalho de autenticação Basic
+        'Content-Type': 'application/x-www-form-urlencoded',  // Tipo de conteúdo
+      },
     });
 
-    const data = await response.json();
-
-    if (response.ok) {
-      res.json(data);
-    } else {
-      res.status(response.status).json({ erro: data.error_description || 'Erro desconhecido' });
-    }
+    // Exibe o token obtido
+    console.log('Token de acesso:', response.data.access_token);
+    return response.data.access_token;
   } catch (error) {
-    res.status(500).json({ erro: 'Erro no servidor', detalhe: error.message });
+    console.error('Erro ao obter token:', error.response ? error.response.data : error.message);
   }
-});
+}
 
-// Página inicial
-app.get('/', (req, res) => {
-  res.send('API da Hotmart rodando com sucesso!');
-});
-
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+// Executa a função para obter o token
+obterToken();
