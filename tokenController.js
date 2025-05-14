@@ -12,7 +12,7 @@ async function gerarTokenHotmart() {
   console.log('Enviando requisição para obter o token Hotmart...');
   
   // Realiza a requisição POST para a Hotmart
-  const response = await fetch('https://api.hotmart.com/security/oauth/token', {
+  const response = await fetch('https://api-sec-vlc.hotmart.com/security/oauth/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
