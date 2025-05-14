@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ROTA 1: gerar token de acesso via client credentials
 app.post('/gerar-token', async (req, res) => {
-  const url = 'https://api.hotmart.com/security/oauth/token';
+  const url = 'https://api-sec-vlc.hotmart.com/security/oauth/token';
 
   const params = new URLSearchParams();
   params.append('client_id', process.env.CLIENT_ID);
@@ -31,7 +32,7 @@ app.post('/gerar-token', async (req, res) => {
     if (response.ok) {
       res.json({ token: data.access_token });
     } else {
-      res.status(400).json({ erro: data });
+      res.status(400).json({ erro: data.error_description || 'Erro desconhecido' });
     }
   } catch (error) {
     res.status(500).json({ erro: 'Erro no servidor', detalhe: error.message });
@@ -58,7 +59,7 @@ app.get('/produtos', async (req, res) => {
     if (response.ok) {
       res.json(data);
     } else {
-      res.status(response.status).json({ erro: data });
+      res.status(response.status).json({ erro: data.error_description || 'Erro desconhecido' });
     }
   } catch (error) {
     res.status(500).json({ erro: 'Erro no servidor', detalhe: error.message });
