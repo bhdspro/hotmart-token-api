@@ -1,23 +1,41 @@
-const express = require('express');
-const cors = require('cors');
 require('dotenv').config();
-const { getTokenHotmart } = require('./tokenController');
+const fetch = require('node-fetch');
 
-const app = express();
-const PORT = process.env.PORT || 4000;
+async function gerarTokenHotmart() {
+  const clientId = process.env.CLIENT_ID;
+  const clientSecret = process.env.CLIENT_SECRET;
 
-app.use(cors());  // Permitir qualquer origem (recomenda-se mais segurança se for em produção)
-app.use(express.json());
-
-app.get('/token-hotmart', async (req, res) => {
-  try {
-    const token = await getTokenHotmart();
-    res.json({ token });
-  } catch (error) {
-    res.status(500).json({ erro: 'Erro ao obter token', detalhe: error.message });
+  if (!clientId || !clientSecret) {
+    console.error('❌ CLIENT_ID ou CLIENT_SECRET não definidos.');
+    return;
   }
-});
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+  const params = new URLSearchParams();
+  params.append('grant_type', 'client_credentials');
+  params.append('client_id', clientId);
+  params.append('client_secret', clientSecret);
+
+  try {
+    const response = await fetch('https://api-sec-vlc.hotmart.com/security/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
+    });
+
+    const texto = await response.text();
+    console.log('📥 Resposta bruta:', texto);
+
+    if (!response.ok) {
+      throw new Error(`❌ Erro ${response.status}: ${texto}`);
+    }
+
+    const data = JSON.parse(texto);
+    console.log('✅ Token de acesso:', data.access_token);
+  } catch (error) {
+    console.error('❌ Erro ao gerar token:', error.message);
+  }
+}
+
+gerarTokenHotmart();
