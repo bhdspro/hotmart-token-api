@@ -1,36 +1,23 @@
-const axios = require('axios');
-const qs = require('qs');
-require('dotenv').config();  // Carrega as variáveis de ambiente
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+const { getTokenHotmart } = require('./tokenController');
 
-async function obterToken() {
-  const url = 'https://api-sec-vlc.hotmart.com/security/oauth/token';  // URL da Hotmart
-  const client_id = process.env.CLIENT_ID;  // Obtém do .env
-  const client_secret = process.env.CLIENT_SECRET;  // Obtém do .env
+const app = express();
+const PORT = process.env.PORT || 4000;
 
-  // Codifica client_id:client_secret em Base64
-  const auth = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
+app.use(cors());  // Permitir qualquer origem (recomenda-se mais segurança se for em produção)
+app.use(express.json());
 
-  // Codifica os parâmetros do corpo da requisição
-  const params = qs.stringify({
-    grant_type: 'client_credentials',
-  });
-
+app.get('/token-hotmart', async (req, res) => {
   try {
-    // Envia a requisição
-    const response = await axios.post(url, params, {
-      headers: {
-        'Authorization': `Basic ${auth}`,  // Cabeçalho de autenticação Basic
-        'Content-Type': 'application/x-www-form-urlencoded',  // Tipo de conteúdo
-      },
-    });
-
-    // Exibe o token obtido
-    console.log('Token de acesso:', response.data.access_token);
-    return response.data.access_token;
+    const token = await getTokenHotmart();
+    res.json({ token });
   } catch (error) {
-    console.error('Erro ao obter token:', error.response ? error.response.data : error.message);
+    res.status(500).json({ erro: 'Erro ao obter token', detalhe: error.message });
   }
-}
+});
 
-// Executa a função para obter o token
-obterToken();
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
