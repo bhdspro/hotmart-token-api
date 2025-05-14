@@ -6,10 +6,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ROTA 1: gerar token de acesso via client credentials
 app.post('/gerar-token', async (req, res) => {
   const url = 'https://api.hotmart.com/security/oauth/token';
 
@@ -37,10 +39,39 @@ app.post('/gerar-token', async (req, res) => {
   }
 });
 
+// ROTA 2: listar produtos usando o token
+app.get('/produtos', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).json({ erro: 'Token não fornecido' });
+  }
+
+  try {
+    const response = await fetch('https://api.hotmart.com/payments/api/v1/products', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      res.json(data);
+    } else {
+      res.status(response.status).json({ erro: data });
+    }
+  } catch (error) {
+    res.status(500).json({ erro: 'Erro no servidor', detalhe: error.message });
+  }
+});
+
+// Página inicial
 app.get('/', (req, res) => {
   res.send('API da Hotmart rodando com sucesso!');
 });
 
+// Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
